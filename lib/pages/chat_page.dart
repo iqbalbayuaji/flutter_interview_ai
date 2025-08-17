@@ -3,11 +3,13 @@ import 'package:get/get.dart';
 
 import '../controllers/chat_controller.dart';
 import '../models/message.dart';
+import '../models/interview_config.dart';
 
 class ChatPage extends StatelessWidget {
   ChatPage({super.key});
 
-  final c = Get.put(ChatController());
+  final InterviewConfig _config = Get.arguments as InterviewConfig;
+  late final ChatController c = Get.put(ChatController(config: _config));
 
   @override
   Widget build(BuildContext context) {

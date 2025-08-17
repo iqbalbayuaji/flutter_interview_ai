@@ -5,8 +5,12 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../models/message.dart';
 import '../services/groq_service.dart';
+import '../models/interview_config.dart';
 
 class ChatController extends GetxController {
+  final InterviewConfig config;
+  ChatController({required this.config});
+
   final messages = <Message>[].obs;
   final textController = TextEditingController();
   final isListening = false.obs;
@@ -25,7 +29,7 @@ class ChatController extends GetxController {
       Message(
         sender: Sender.ai,
         text:
-            'Halo! Saya AI interviewer. Tekan ikon mikrofon untuk menjawab dengan suara atau ketik pesan lalu kirim. Saya akan menilai jawaban dan memberi feedback.',
+            'Halo! Sesi interview siap dimulai. Kesulitan: ${config.difficulty}. Gaya HRD: ${config.hrdStyle}. Tekan ikon mikrofon untuk menjawab dengan suara atau ketik pesan lalu kirim.',
       ),
     );
   }
@@ -38,10 +42,43 @@ class ChatController extends GetxController {
   }
 
   List<Map<String, String>> _toGroqMessages() {
-    final history = <Map<String, String>>[{
-      'role': 'system',
-      'content': 'Anda adalah pewawancara kerja yang ramah dan profesional. Lakukan tanya-jawab singkat, satu pertanyaan per giliran. Bahasa: Indonesia. Beri umpan balik ringkas dan tips praktis.'
-    }];
+    final difficultyHint = () {
+      switch (config.difficulty.toLowerCase()) {
+        case 'easy':
+          return 'Pertanyaan sederhana, fokus pada dasar-dasar, tempo santai.';
+        case 'medium':
+          return 'Pertanyaan menengah, eksplorasi pengalaman dan problem solving.';
+        case 'hard':
+          return 'Pertanyaan mendalam, tantang kandidat dengan studi kasus dan follow-up.';
+        default:
+          return 'Pertanyaan bertahap menyesuaikan kemampuan kandidat.';
+      }
+    }();
+
+    final styleHint = () {
+      switch (config.hrdStyle.toLowerCase()) {
+        case 'friendly':
+          return 'Nada ramah, suportif, dan membangun kepercayaan diri.';
+        case 'strict':
+          return 'Nada tegas, to the point, dan kritis namun tetap sopan.';
+        case 'technical':
+          return 'Fokus pada aspek teknis, minta contoh konkret dan detail implementasi.';
+        case 'behavioral':
+          return 'Fokus pada perilaku, gunakan kerangka STAR (Situation, Task, Action, Result).';
+        default:
+          return 'Nada profesional dan seimbang.';
+      }
+    }();
+
+    final system = 'Anda adalah pewawancara kerja profesional. Bahasa: Indonesia. '
+        'Konfigurasi: Kesulitan=${config.difficulty}, Gaya HRD=${config.hrdStyle}. '
+        'Panduan kesulitan: $difficultyHint '
+        'Panduan gaya: $styleHint '
+        'Aturan: ajukan satu pertanyaan per giliran, berikan umpan balik ringkas dan tips praktis saat perlu.';
+
+    final history = <Map<String, String>>[
+      {'role': 'system', 'content': system}
+    ];
     for (final m in messages) {
       history.add({
         'role': m.sender == Sender.user ? 'user' : 'assistant',
